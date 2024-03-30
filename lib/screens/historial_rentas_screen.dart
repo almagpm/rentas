@@ -34,97 +34,108 @@ class _HistorialRentasScreenState extends State<HistorialRentasScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Historial de Rentas'),
+        title: Text(
+          'Historial de rentas',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.purple[700],
       ),
-      body: FutureBuilder<List<RentaModel>>(
-        future: _allRentasFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else {
-            final rentas = snapshot.data!;
-            //Se acomodan aqui
-            rentas.sort((a, b) => a.renta_id!.compareTo(b.renta_id!)); 
-            return CustomScrollView(
-              slivers: [
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final renta = rentas[index];
-                      final dateFormatter = DateFormat('yyyy-MM-dd');
-                      final fechaInicioFormatted = dateFormatter.format(renta.fecha_inicio!);
-                      final fechaFinFormatted = dateFormatter.format(renta.fecha_fin!);
-                      return InkWell(
-                      onTap: () {
-                          Navigator.pushNamed(
-                            context,
-                            '/detalleR',
-                            arguments: renta.renta_id, 
-                          );
+      body: Container(
+        color: Colors.indigo[100], // Color de fondo del Container
+        child: FutureBuilder<List<RentaModel>>(
+          future: _allRentasFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            } else {
+              final rentas = snapshot.data!;
+              //Se acomodan aqui
+              rentas.sort((a, b) => a.renta_id!.compareTo(b.renta_id!)); 
+              return CustomScrollView(
+                slivers: [
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final renta = rentas[index];
+                        final dateFormatter = DateFormat('yyyy-MM-dd');
+                        final fechaInicioFormatted = dateFormatter.format(renta.fecha_inicio!);
+                        final fechaFinFormatted = dateFormatter.format(renta.fecha_fin!);
+                        return InkWell(
+                          onTap: () {
+                            Navigator.pushNamed(
+                              context,
+                              '/detalleR',
+                              arguments: renta.renta_id, 
+                            );
+                          },
+                          child: Container(
+                            margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                            padding: EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(28),
+                              color: Colors.white, 
+                              boxShadow: [BoxShadow(
+                                color: Colors.black.withOpacity(0.2), // Color y opacidad de la sombra
+                                spreadRadius: 1, // Radio de propagación de la sombra
+                                blurRadius: 3, // Radio de desenfoque de la sombra
+                                offset: Offset(0, 2), // Desplazamiento horizontal y vertical de la sombra
+                              )],
+                              border: Border.all(color: Colors.grey), 
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                _buildStatusIndicator(renta.estatus!),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Renta #${renta.renta_id}', style: TextStyle(fontWeight: FontWeight.bold)),
+                                    SizedBox(height: 8),
+                                    Text('Fecha inicio: $fechaInicioFormatted'),
+                                    Text('Fecha término: $fechaFinFormatted'),
+                                  ],
+                                ),
+                                PopupMenuButton<String>(
+                                  onSelected: (String result) {
+                                    if (result == "Editar") {
+                                    } else if (result == "Eliminar") {
+                                    }
+                                  },
+                                  itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                                    const PopupMenuItem<String>(
+                                      value: "Editar",
+                                      child: Text("Editar"),
+                                    ),
+                                    const PopupMenuItem<String>(
+                                      value: "Eliminar",
+                                      child: Text("Eliminar"),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+
                       },
-                      child: Container(
-                          margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                          padding: EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(28),
-                            color: Colors.white, 
-                            border: Border.all(color: Colors.grey), 
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              _buildStatusIndicator(renta.estatus!),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Renta #${renta.renta_id}', style: TextStyle(fontWeight: FontWeight.bold)),
-                                  SizedBox(height: 8),
-                                  Text('Fecha inicio: $fechaInicioFormatted'),
-                                  Text('Fecha término: $fechaFinFormatted'),
-                                ],
-                              ),
-                              PopupMenuButton<String>(
-                                onSelected: (String result) {
-                                  
-                                  if (result == "Editar") {
-                                    
-                                  } else if (result == "Eliminar") {
-                                    
-                                  }
-                                },
-                                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                                  const PopupMenuItem<String>(
-                                    value: "Editar",
-                                    child: Text("Editar"),
-                                  ),
-                                  const PopupMenuItem<String>(
-                                    value: "Eliminar",
-                                    child: Text("Eliminar"),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                      ),
-                      );
-                    },
-                    childCount: rentas.length,
+                      childCount: rentas.length,
+                    ),
                   ),
-                ),
-              ],
-            );
-          }
-        },
+                ],
+              );
+            }
+          },
+        ),
       ),
       //bottomNavigationBar: NavigationBarApp(),
     );
   }
 
   Widget _buildStatusIndicator(String status) {
-  Color color;
-  switch (status) {
+    Color color;
+    switch (status) {
       case 'Cumplida':
         color = Colors.green;
         break;
@@ -136,15 +147,14 @@ class _HistorialRentasScreenState extends State<HistorialRentasScreen> {
         break;
       default:
         color = Colors.grey;
-  }
-  return CircleAvatar(
+    }
+    return CircleAvatar(
       radius: 30, 
       backgroundColor: color,
       child: CircleAvatar(
         radius: 22,
         backgroundColor: Colors.white, 
       ),
-  );
+    );
   }
 }
-

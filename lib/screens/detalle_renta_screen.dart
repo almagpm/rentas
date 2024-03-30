@@ -78,80 +78,87 @@ class _DetalleRentaScreenState extends State<DetalleRentaScreen> {
       } else {
         return Scaffold(
           appBar: AppBar(
-            title: Text('Detalle de Renta'),
+            title: Text(
+              'Detalle de Renta',
+              style: TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.purple[700],
           ),
-          body: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: screenWidth,
-                decoration: BoxDecoration(
-                  color: Color.fromARGB(82, 146, 159, 190),
-                  borderRadius: BorderRadius.circular(30), // Bordes redondeados
-                ),
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center, // Centra el contenido horizontalmente
-                  children: [
-                    Text(
-                      'Información de la Renta',
-                      style: TextStyle(fontSize: 24, color: Colors.black), // Tamaño y color de la fuente
-                    ),
-                    SizedBox(height: 10), // Espacio entre elementos
-                    Text(
-                      'Folio: ${_renta!.renta_id}',
-                      style: TextStyle(fontSize: 14, color: Colors.black), // Tamaño y color de la fuente
-                    ),
-                    Text(
-                      'Fecha inicio: ${_renta!.fecha_inicio}',
-                      style: TextStyle(fontSize: 14, color: Colors.black), // Tamaño y color de la fuente
-                    ),
-                    Text(
-                      'Fecha fin: ${_renta!.fecha_fin}',
-                      style: TextStyle(fontSize: 14, color: Colors.black), // Tamaño y color de la fuente
-                    ),
-                    Text(
-                      'Estatus: ${_renta!.estatus}',
-                      style: TextStyle(fontSize: 14, color: Colors.black), // Tamaño y color de la fuente
-                    ),
-                     // Espacio entre elementos
-                  ],
-                ),
-              ),
-              Expanded(
-                
-                child: SingleChildScrollView(
+          body: Container(
+            color: Color.fromARGB(255, 168, 145, 207), // Color de fondo de la pantalla
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: 6),
+                Container(
+                  width: screenWidth,
+                  decoration: BoxDecoration(
+                    color: Color.fromARGB(255, 146, 159, 190),
+                    borderRadius: BorderRadius.circular(80),
+                    border: Border.all(color: Color.fromARGB(130, 43, 43, 43)!, width: 2),
+                  ),
+                  padding: EdgeInsets.all(16),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [ 
-                    
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: _detallesRenta!.length,
-                        itemBuilder: (context, index) {
-                          final detalle = _detallesRenta![index];
-                          final mobiliario = _mobiliarios![index];
-                          return ListTile(
-                            
-                            title: Text('Detalle #${detalle.detalle_id}'),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Mobiliario ID: ${detalle.mobiliario_id}'),
-                                Text('Nombre Mobiliario: ${mobiliario.nombre_mobiliario}'),
-                                Text('Cantidad: ${detalle.cantidad}'),
-                              ],
-                            ),
-                          );
-                        },
+                    crossAxisAlignment: CrossAxisAlignment.center, // Centra el contenido horizontalmente
+                    children: [
+                      Text(
+                        'Información de la Renta',
+                        style: TextStyle(fontSize: 24, color: Colors.black), // Tamaño y color de la fuente
                       ),
-                      _buildLottieAnimation(_renta!.estatus!),
+                      SizedBox(height: 10), // Espacio entre elementos
+                      Text(
+                        'Folio: ${_renta!.renta_id}',
+                        style: TextStyle(fontSize: 14, color: Colors.black), // Tamaño y color de la fuente
+                      ),
+                      Text(
+                        'Fecha inicio: ${_renta!.fecha_inicio}',
+                        style: TextStyle(fontSize: 14, color: Colors.black), // Tamaño y color de la fuente
+                      ),
+                      Text(
+                        'Fecha fin: ${_renta!.fecha_fin}',
+                        style: TextStyle(fontSize: 14, color: Colors.black), // Tamaño y color de la fuente
+                      ),
+                      Text(
+                        'Estatus: ${_renta!.estatus}',
+                        style: TextStyle(fontSize: 14, color: Colors.black), // Tamaño y color de la fuente
+                      ),
+                      Container(
+                        margin: EdgeInsets.symmetric(vertical: 1),
+                        child: AspectRatio(
+                          aspectRatio: 3,
+                          child: _buildLottieAnimation(_renta!.estatus!),
+                        ),
+                      ),
+                      SizedBox(height: 10), // Espacio entre elementos
                     ],
                   ),
                 ),
-              ),
-            ],
+                SizedBox(height: 20), 
+                Divider(),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: _detallesRenta!.length,
+                    separatorBuilder: (context, index) => Divider(),
+                    itemBuilder: (context, index) {
+                      final detalle = _detallesRenta![index];
+                      final mobiliario = _mobiliarios![index];
+                      return ListTile(
+                        title: Text('Detalle #${detalle.detalle_id}', textAlign: TextAlign.center),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Mobiliario ID: ${detalle.mobiliario_id}'),
+                            Text('Nombre Mobiliario: ${mobiliario.nombre_mobiliario}'),
+                            Text('Cantidad: ${detalle.cantidad}'),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Divider(),
+              ],
+            ),
           ),
         );
       }
@@ -188,12 +195,11 @@ class _DetalleRentaScreenState extends State<DetalleRentaScreen> {
 
     if (animationAsset.isNotEmpty) {
       return Transform.scale(
-        scale: .5,
+        scale: 1,
         child: Lottie.network(animationAsset),
       );
     } else {
       return Text('No se encontró la animación correspondiente');
     }
   }
-
 }

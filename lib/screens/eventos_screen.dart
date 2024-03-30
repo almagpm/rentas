@@ -4,8 +4,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
+import 'package:rentas/database/detalle_renta_database.dart';
 import 'package:rentas/database/evento_database.dart';
+import 'package:rentas/database/mobiliario_database.dart';
+import 'package:rentas/model/detalle_renta_model.dart';
 import 'package:rentas/model/evento_model.dart';
+import 'package:rentas/model/mobiliario_model.dart';
 import 'package:rentas/screens/navigation_bar.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -31,17 +35,17 @@ class _EventosScreenState extends State<EventosScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Scaffold(
-        appBar: AppBar(
-          title: Text(
-            'Eventos',
-            style: TextStyle(color: Colors.white),
-          ),
-          backgroundColor: Colors.blue[900],
+      appBar: AppBar(
+        title: Text(
+          'Eventos',
+          style: TextStyle(color: Colors.white),
         ),
-        body: Container(
-          color: Colors.blue[900],
-          child: Column(children: [
+        backgroundColor: Colors.blue[900],
+      ),
+      body: Container(
+        color: Colors.blue[900],
+        child: Column(
+          children: [
             TableCalendar(
               firstDay: DateTime.utc(2010, 10, 16),
               lastDay: DateTime.utc(2030, 3, 14),
@@ -50,43 +54,37 @@ class _EventosScreenState extends State<EventosScreen> {
               calendarFormat: _calendarFormat,
               locale: 'es_ES',
               headerStyle: HeaderStyle(
-                formatButtonVisible:
-                    false, // Oculta el botón de cambio de formato
-                titleCentered:
-                    true, // Centra el título (día de la semana y fecha)
+                formatButtonVisible: false,
+                titleCentered: true,
                 formatButtonTextStyle: TextStyle().copyWith(
-                    color: Colors.white,
-                    fontSize: 15.0), // Estilo del botón de cambio de formato
-                formatButtonShowsNext:
-                    false, // No muestra el botón de cambio de formato siguiente
+                  color: Colors.white,
+                  fontSize: 15.0,
+                ),
+                formatButtonShowsNext: false,
                 titleTextStyle: TextStyle(
-                    fontSize: 20.0,
-                    color: Colors.white), // Estilo del texto del título
-
+                  fontSize: 20.0,
+                  color: Colors.white,
+                ),
                 titleTextFormatter: (date, _) =>
-                    '${DateFormat('MMMM').format(date)}', // Formato del texto del título (día de la semana y fecha)
-                // Otros estilos...
+                    '${DateFormat('MMMM').format(date)}',
               ),
               daysOfWeekStyle: DaysOfWeekStyle(
-                  weekdayStyle: TextStyle(color: Colors.white),
-                  weekendStyle: TextStyle(color: Colors.white)),
+                weekdayStyle: TextStyle(color: Colors.white),
+                weekendStyle: TextStyle(color: Colors.white),
+              ),
               calendarStyle: CalendarStyle(
                 defaultTextStyle: TextStyle(color: Colors.white),
                 weekendTextStyle: TextStyle(color: Colors.white),
-                selectedDecoration:
-                    BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
+                selectedDecoration: BoxDecoration(
+                  color: Colors.blue,
+                  shape: BoxShape.circle,
+                ),
               ),
               selectedDayPredicate: (day) {
-                // Use `selectedDayPredicate` to determine which day is currently selected.
-                // If this returns true, then `day` will be marked as selected.
-
-                // Using `isSameDay` is recommended to disregard
-                // the time-part of compared DateTime objects.
                 return isSameDay(_selectedDay, day);
               },
               onDaySelected: (selectedDay, focusedDay) {
                 if (!isSameDay(_selectedDay, selectedDay)) {
-                  // Call `setState()` when updating the selected day
                   setState(() {
                     _selectedDay = selectedDay;
                     _focusedDay = focusedDay;
@@ -94,23 +92,22 @@ class _EventosScreenState extends State<EventosScreen> {
                 }
               },
               onPageChanged: (focusedDay) {
-                // No need to call `setState()` here
                 _focusedDay = focusedDay;
               },
             ),
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                    borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(50),
-                        topRight: Radius.circular(50)),
-                    color: Colors.white),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(50),
+                    topRight: Radius.circular(50),
+                  ),
+                  color: Colors.white,
+                ),
                 child: FutureBuilder(
-                  future:
-                  //eventosDB!.getEventos(),
-                  eventosDB!.getEventosByFecha(_selectedDay.toString().split(' ')[0]),
-                  builder:
-                      (context, AsyncSnapshot<List<EventoModel>> snapshot) {
+                  future: eventosDB!.getEventosByFecha(
+                      _selectedDay.toString().split(' ')[0]),
+                  builder: (context, AsyncSnapshot<List<EventoModel>> snapshot) {
                     if (snapshot.hasError) {
                       return Center(
                         child: Text(snapshot.error.toString()),
@@ -123,53 +120,64 @@ class _EventosScreenState extends State<EventosScreen> {
                           child: ListView.builder(
                             itemCount: snapshot.data!.length,
                             itemBuilder: (context, index) {
-                              return Container(
-                                margin: EdgeInsets.symmetric(vertical: 10),
+                              return GestureDetector(
+                                onTap: () {
+                                  _mostrarModalEvento(snapshot.data![index]);
+                                },
+                                child: Container(
+                                  margin: EdgeInsets.symmetric(vertical: 10),
                                   decoration: BoxDecoration(
-                                      //color: Colors.grey[100],
-                                      border:
-                                          Border.all(color: Colors.grey[300]!),
-                                      borderRadius: BorderRadius.only(
-                                          topRight: Radius.circular(20),
-                                          topLeft: Radius.circular(20),
-                                          bottomRight: Radius.circular(10),
-                                          bottomLeft: Radius.circular(10))),
-                                  child: Column(children: [
-                                    Padding(
-                                      padding: EdgeInsets.all(15),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            snapshot
-                                                .data![index].nombre!,
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.bold),
-                                          ),
-                                          SizedBox(
-                                            height: 10,
-                                          ),
-                                          Row(
-                                            children: [
-                                              Icon(Icons.timer_sharp),
-                                              Text(snapshot
-                                                  .data![index].fecha_evento!.split(' ')[1])
-                                            ],
-                                          ),
-                                        ],
-                                      ),
+                                    border: Border.all(color: Colors.grey[300]!),
+                                    borderRadius: BorderRadius.only(
+                                      topRight: Radius.circular(20),
+                                      topLeft: Radius.circular(20),
+                                      bottomRight: Radius.circular(10),
+                                      bottomLeft: Radius.circular(10),
                                     ),
-                                    Container(
-                                      height: 10,
-                                      decoration: BoxDecoration(
-                                        color: getRandomColor(),
-                                        borderRadius: BorderRadius.only(
-                                            bottomLeft: Radius.circular(20),
-                                            bottomRight: Radius.circular(20)),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Padding(
+                                        padding: EdgeInsets.all(15),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              snapshot.data![index].nombre!,
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              height: 10,
+                                            ),
+                                            Row(
+                                              children: [
+                                                Icon(Icons.timer_sharp),
+                                                Text(
+                                                  snapshot.data![index]
+                                                      .fecha_evento!
+                                                      .split(' ')[1],
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    )
-                                  ]));
+                                      Container(
+                                        height: 10,
+                                        decoration: BoxDecoration(
+                                          color: getRandomColor(),
+                                          borderRadius: BorderRadius.only(
+                                            bottomLeft: Radius.circular(20),
+                                            bottomRight: Radius.circular(20),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
                             },
                           ),
                         );
@@ -182,21 +190,117 @@ class _EventosScreenState extends State<EventosScreen> {
                   },
                 ),
               ),
-            )
-          ]),
+            ),
+          ],
         ),
       ),
-      //bottomNavigationBar: NavigationBarApp(),
     );
   }
 
   Color getRandomColor() {
     Random random = Random();
     return Color.fromRGBO(
-      random.nextInt(256), // Valor aleatorio para el componente rojo (0-255)
-      random.nextInt(256), // Valor aleatorio para el componente verde (0-255)
-      random.nextInt(256), // Valor aleatorio para el componente azul (0-255)
-      1.0, // Opacidad (0.0 - 1.0)
+      random.nextInt(256),
+      random.nextInt(256),
+      random.nextInt(256),
+      1.0,
     );
   }
+
+  void _mostrarModalEvento(EventoModel evento) async {
+  // Almacenar una referencia al contexto
+  BuildContext modalContext = context;
+
+  // Obtener detalles del evento
+  DetalleRentaDatabase detalleRentaDB = DetalleRentaDatabase();
+  List<DetalleRentaModel> detallesRenta =
+      await detalleRentaDB.getDetallesRentaByRentaId(evento.renta_id!);
+
+  showModalBottomSheet(
+    context: modalContext,
+    builder: (BuildContext context) {
+      return SingleChildScrollView(
+        child: Container(
+          padding: EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                evento.nombre!,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 10),
+              Text(
+                'Fecha: ${evento.fecha_evento!.split(' ')[0]}',
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(height: 10),
+              Text(
+                'Detalles del evento: ${evento.detalles_evento}',
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Detalles de la renta:',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              // Mostrar detalles de la renta
+              ListView.builder(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(), // Evitar el desplazamiento de la lista dentro de ListView
+                itemCount: detallesRenta.length,
+                itemBuilder: (context, index) {
+                  int? mobiliarioId = detallesRenta[index].mobiliario_id; // Cambiar el tipo de mobiliarioId a int?
+                  return FutureBuilder(
+                    future: MobiliarioDatabase().getMobiliario(mobiliarioId!),
+                    builder: (context, AsyncSnapshot<MobiliarioModel?> snapshot) {
+                      if (snapshot.hasData && snapshot.data != null) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Divider(),
+                            Text(
+                              'Mobiliario ID: $mobiliarioId',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            Text(
+                              'Cantidad: ${detallesRenta[index].cantidad}',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            Text(
+                              'Nombre: ${snapshot.data!.nombre_mobiliario}',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            Divider(),
+                          ],
+                        );
+                      } else if (snapshot.hasError) {
+                        return Text("Error: ${snapshot.error}");
+                      } else {
+                        return CircularProgressIndicator();
+                      }
+                    },
+                  );
+                },
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(modalContext).pop();
+                },
+                child: Text('Regresar a la lista de eventos'),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+
+
+
+
+
 }
