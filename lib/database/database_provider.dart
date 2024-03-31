@@ -135,10 +135,11 @@ class DatabaseProvider {
         await db.execute('''
           INSERT INTO Eventos (renta_id, nombre,fecha_evento, detalles_evento) VALUES
           (1, 'Fiesta de Cumpleaños', '2024-03-30 15:00:00', 'Celebración del cumpleaños de Ana en su casa.'),
-          (2, 'Reunión de Trabajo', '2024-03-30 17:00:00', ' Reunión para discutir los planes de proyecto para el próximo trimestre.'),
+          (2, 'Reunión de Trabajo', '2024-04-01 17:00:00', ' Reunión para discutir los planes de proyecto para el próximo trimestre.'),
           (3, 'Concierto', '2024-03-05 20:00:00', 'Asistir al concierto de la banda favorita en el estadio local'),
           (4, 'Entrega de Proyecto', '2024-04-10 10:00:00', 'Fecha límite para entregar el proyecto de desarrollo de software.'),
-          (5, 'Cena Familiar', '2024-04-10 12:00:00', 'Cena especial con la familia para celebrar el aniversario de bodas.')
+          (5, 'Cena Familiar', '2024-04-10 12:00:00', 'Cena especial con la familia para celebrar el aniversario de bodas.'),
+          (1, 'Notificacion programada', '2024-04-02 12:00:00', 'Para saber si si llegan las notificaciones.')
         ''');
 
         // Insertar datos en la tabla Mobiliario

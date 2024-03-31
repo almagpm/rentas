@@ -1,8 +1,7 @@
+import 'dart:async';
 import 'dart:math';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:rentas/database/detalle_renta_database.dart';
 import 'package:rentas/database/evento_database.dart';
@@ -10,11 +9,15 @@ import 'package:rentas/database/mobiliario_database.dart';
 import 'package:rentas/model/detalle_renta_model.dart';
 import 'package:rentas/model/evento_model.dart';
 import 'package:rentas/model/mobiliario_model.dart';
-import 'package:rentas/screens/navigation_bar.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter/services.dart';
 
 class EventosScreen extends StatefulWidget {
-  const EventosScreen({super.key});
+  const EventosScreen({Key? key}) : super(key: key);
 
   @override
   State<EventosScreen> createState() => _EventosScreenState();
@@ -25,12 +28,37 @@ class _EventosScreenState extends State<EventosScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   EventoDatabase? eventosDB;
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  static const MethodChannel platform = MethodChannel('com.example.app/timezone');
+
+  late tz.Location _local; // Variable para almacenar la ubicación de la zona horaria
 
   @override
   void initState() {
     super.initState();
-    eventosDB = new EventoDatabase();
+    initializeNotifications();
+    configureLocalTimeZone(); // Inicializar la zona horaria
+    eventosDB = EventoDatabase();
   }
+
+  Future<void> initializeNotifications() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('app_icon');
+    final InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+    );
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  }
+
+  Future<void> configureLocalTimeZone() async {
+  tz.initializeTimeZones();
+  // Establecer la zona horaria de México (América/Mexico_City)
+  _local = tz.getLocation('America/Mexico_City'); // Obtener la ubicación de la zona horaria de México
+  tz.setLocalLocation(_local); // Establecer la ubicación local en la zona horaria de México
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -208,6 +236,10 @@ class _EventosScreenState extends State<EventosScreen> {
   }
 
   void _mostrarModalEvento(EventoModel evento) async {
+  // Obtener la fecha dos días antes del evento
+  DateTime fechaEvento = DateTime.parse(evento.fecha_evento!);
+  DateTime twoDaysBeforeEvent = fechaEvento.subtract(Duration(days: 2));
+
   // Almacenar una referencia al contexto
   BuildContext modalContext = context;
 
@@ -216,15 +248,29 @@ class _EventosScreenState extends State<EventosScreen> {
   List<DetalleRentaModel> detallesRenta =
       await detalleRentaDB.getDetallesRentaByRentaId(evento.renta_id!);
 
+  // Enviar notificación instantánea
+
   showModalBottomSheet(
     context: modalContext,
     builder: (BuildContext context) {
-      return SingleChildScrollView(
+      return SingleChildScrollView( // SingleChildScrollView para permitir scroll
         child: Container(
           padding: EdgeInsets.all(20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.notifications),
+                    onPressed: () {
+                      _programarNotificacion(twoDaysBeforeEvent, evento.nombre!);
+                      _enviarNotificacionInstantanea(twoDaysBeforeEvent);
+                    },
+                  ),
+                ],
+              ),
               Text(
                 evento.nombre!,
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -247,10 +293,10 @@ class _EventosScreenState extends State<EventosScreen> {
               // Mostrar detalles de la renta
               ListView.builder(
                 shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(), // Evitar el desplazamiento de la lista dentro de ListView
+                physics: NeverScrollableScrollPhysics(),
                 itemCount: detallesRenta.length,
                 itemBuilder: (context, index) {
-                  int? mobiliarioId = detallesRenta[index].mobiliario_id; // Cambiar el tipo de mobiliarioId a int?
+                  int? mobiliarioId = detallesRenta[index].mobiliario_id;
                   return FutureBuilder(
                     future: MobiliarioDatabase().getMobiliario(mobiliarioId!),
                     builder: (context, AsyncSnapshot<MobiliarioModel?> snapshot) {
@@ -299,8 +345,47 @@ class _EventosScreenState extends State<EventosScreen> {
 }
 
 
+  Future<void> _enviarNotificacionInstantanea(DateTime fechaNotificacion) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'instant_notification_channel_id',
+      'Instant Notification',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+    const NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
 
+    await flutterLocalNotificationsPlugin.show(
+      0,
+      'Notificación Instantánea',
+      'Notificación programada para el día: ${DateFormat('dd-MM-yyyy').format(fechaNotificacion)}',
+      platformChannelSpecifics,
+    );
+  }
 
+  void _programarNotificacion(DateTime fechaNotificacion, String nombreEvento) async {
+    // Convertir DateTime a TZDateTime
+    var scheduledDate = tz.TZDateTime.from(fechaNotificacion, _local);
 
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'your channel id', // ID del canal
+      'Nombre del canal', // Nombre del canal
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+    const NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
 
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      0, // ID de la notificación
+      'Recordatorio', // Título de la notificación
+      nombreEvento, // Cuerpo de la notificación
+      scheduledDate,
+      platformChannelSpecifics,
+      androidAllowWhileIdle: true,
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
 }
