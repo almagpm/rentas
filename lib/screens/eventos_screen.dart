@@ -14,6 +14,7 @@ import 'package:rentas/model/evento_model.dart';
 import 'package:rentas/model/mobiliario_model.dart';
 import 'package:rentas/model/renta_model.dart';
 import 'package:rentas/screens/utils.dart';
+import 'package:rentas/settings/notification_helper.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -50,6 +51,7 @@ class _EventosScreenState extends State<EventosScreen> {
     eventosDB = EventoDatabase();
     cargarEventos();
     _selectedDay = _focusedDay;
+
     super.initState();
   }
 
@@ -426,12 +428,12 @@ class _EventosScreenState extends State<EventosScreen> {
     List<RentaModel> rentas = await rentaDB.getRentas();
 
     final txtRenta = DropdownButtonFormField<String>(
-      validator: (value){
-        if (value==null) {
-          return 'Necesitas seleccionar una renta';
-        }
-        return null;
-      },
+        validator: (value) {
+          if (value == null) {
+            return 'Necesitas seleccionar una renta';
+          }
+          return null;
+        },
         value: (conRenta.text.isEmpty) ? null : conRenta.text,
         hint: Text('Seleccione una renta'),
         items: rentas.map<DropdownMenuItem<String>>((value) {
@@ -512,6 +514,14 @@ class _EventosScreenState extends State<EventosScreen> {
             backgroundColor: Colors.blue[900], foregroundColor: Colors.white),
         onPressed: () {
           if (_keyForm.currentState!.validate()) {
+          final DateTime scheduledDate = DateTime(int.parse(conFecha.text.split('-')[0]),int.parse(conFecha.text.split('-')[1]),int.parse(conFecha.text.split('-')[2])-2,int.parse(conHora.text.split(':')[0]),int.parse(conHora.text.split(':')[1]));
+          print(scheduledDate);
+          if(DateTime.now().isBefore(scheduledDate)){
+            NotificationService().scheduleNotification(
+            title: 'Evento próximo',
+            body: 'Faltan 2 días para el evento ${conNombre.text}',
+            scheduledNotificationDateTime: scheduledDate);
+          }
             if (evento == null) {
               EventoModel event = EventoModel(
                   nombre: conNombre.text,
@@ -589,71 +599,69 @@ class _EventosScreenState extends State<EventosScreen> {
     showDialog(
       context: context,
       builder: (context) {
-        return Expanded(
-          child: AlertDialog(
-            elevation: 0,
-            backgroundColor: Colors.white,
-            content: Form(
-              key: _keyForm,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Evento',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                  Container(
-                    //padding: EdgeInsets.all(5),
-                    child: txtNombre,
-                  ),
-                  space,
-                  Container(
-                    //padding: EdgeInsets.all(5),
-                    child: txtDetalles,
-                  ),
-                  space,
-                  space,
-                  Text(
-                    'Renta',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                  Container(
-                    //padding: EdgeInsets.all(5),
-                    child: txtRenta,
-                  ),
-                  space,
-                  space,
-                  Text(
-                    'Horario',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          //padding: EdgeInsets.all(5),
-                          child: txtFecha,
-                        ),
+        return AlertDialog(
+          elevation: 0,
+          backgroundColor: Colors.white,
+          content: Form(
+            key: _keyForm,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Evento',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+                Container(
+                  //padding: EdgeInsets.all(5),
+                  child: txtNombre,
+                ),
+                space,
+                Container(
+                  //padding: EdgeInsets.all(5),
+                  child: txtDetalles,
+                ),
+                space,
+                space,
+                Text(
+                  'Renta',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+                Container(
+                  //padding: EdgeInsets.all(5),
+                  child: txtRenta,
+                ),
+                space,
+                space,
+                Text(
+                  'Horario',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        //padding: EdgeInsets.all(5),
+                        child: txtFecha,
                       ),
-                      Expanded(
-                        child: Container(
-                          //padding: EdgeInsets.all(5),
-                          child: txtHora,
-                        ),
+                    ),
+                    Expanded(
+                      child: Container(
+                        //padding: EdgeInsets.all(5),
+                        child: txtHora,
                       ),
-                    ],
-                  ),
-                  space,
-                  Row(
-                    children: [
-                      Expanded(
-                        child: btnAgregar,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
+                space,
+                Row(
+                  children: [
+                    Expanded(
+                      child: btnAgregar,
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         );
@@ -692,8 +700,6 @@ class _EventosScreenState extends State<EventosScreen> {
                     IconButton(
                       icon: Icon(Icons.notifications),
                       onPressed: () {
-                        _programarNotificacion(
-                            twoDaysBeforeEvent, evento.nombre!);
                         _enviarNotificacionInstantanea(twoDaysBeforeEvent);
                       },
                     ),
@@ -790,33 +796,6 @@ class _EventosScreenState extends State<EventosScreen> {
       'Notificación Instantánea',
       'Notificación programada para el día: ${DateFormat('dd-MM-yyyy').format(fechaNotificacion)}',
       platformChannelSpecifics,
-    );
-  }
-
-  void _programarNotificacion(
-      DateTime fechaNotificacion, String nombreEvento) async {
-    // Convertir DateTime a TZDateTime
-    var scheduledDate = tz.TZDateTime.from(fechaNotificacion, _local);
-
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(
-      'your channel id', // ID del canal
-      'Nombre del canal', // Nombre del canal
-      importance: Importance.max,
-      priority: Priority.high,
-    );
-    const NotificationDetails platformChannelSpecifics =
-        NotificationDetails(android: androidPlatformChannelSpecifics);
-
-    await flutterLocalNotificationsPlugin.zonedSchedule(
-      0, // ID de la notificación
-      'Recordatorio', // Título de la notificación
-      nombreEvento, // Cuerpo de la notificación
-      scheduledDate,
-      platformChannelSpecifics,
-      androidAllowWhileIdle: true,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 }

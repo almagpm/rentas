@@ -5,8 +5,13 @@ import 'package:rentas/screens/historial_rentas_screen.dart'; // Importar la pan
 import 'package:rentas/screens/detalle_renta_screen.dart';
 import 'package:rentas/screens/navigation_bar.dart'; // Importar la pantalla DetalleRentaScreen
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:rentas/settings/notification_helper.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  NotificationService().initNotification();
+  tz.initializeTimeZones();
   initializeDateFormatting('es_ES', null).then((_) {
     runApp(MyApp());
   });
